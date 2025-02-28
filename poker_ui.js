@@ -294,28 +294,28 @@ document.addEventListener('DOMContentLoaded', function() {
     function generateOpponentBetInputs(count) {
         opponentBetInputs.innerHTML = '';
         
-        // Get player position
+        // Get player position and total players
         const playerPos = position.value;
+        const totalPlayers = count + 1; // Add 1 to include the player
         let activePlayers = 0;
         
-        // Determine how many players have already acted based on position
-        switch(playerPos) {
-            case 'early':
-                // In early position, almost no one has acted yet
-                activePlayers = 1; // Maybe just the big blind
-                break;
-            case 'middle':
-                // In middle position, early positions have already acted
-                activePlayers = Math.ceil(count * 0.3);
-                break;
-            case 'late':
-                // In late position, most players have already acted
-                activePlayers = Math.ceil(count * 0.7);
-                break;
-            case 'button':
-                // On the button, almost everyone has acted except blinds
-                activePlayers = count - 2;
-                break;
+        // Calculate active players based on position and total players
+        if (playerPos === 'small_blind') {
+            activePlayers = 0;
+        } else if (playerPos === 'big_blind') {
+            activePlayers = 1;
+        } else {
+            // For non-blind positions, calculate how many players have acted
+            // Find the position number of the current player
+            let currentPosNum = 0;
+            for (let i = 1; i <= totalPlayers; i++) {
+                if (getPositionName(totalPlayers, i) === playerPos) {
+                    currentPosNum = i;
+                    break;
+                }
+            }
+            // Players who have acted = players between SB and current position
+            activePlayers = currentPosNum - 1;
         }
         
         // Ensure activePlayers is at least 0 and at most the total count
@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Create a header explaining the betting situation
         const header = document.createElement('div');
-        header.innerHTML = `<p>Based on your ${playerPos} position, ${activePlayers} player(s) have already acted:</p>`;
+        header.innerHTML = `<p>Based on your position (${playerPos.replace(/_/g, ' ')}), ${activePlayers} player(s) have already acted:</p>`;
         opponentBetInputs.appendChild(header);
         
         // Create inputs only for players who have already acted
@@ -352,24 +352,28 @@ document.addEventListener('DOMContentLoaded', function() {
         const count = parseInt(numOpponents.value);
         let total = 0;
         
-        // Get player position
+        // Get player position and total players
         const playerPos = position.value;
+        const totalPlayers = count + 1; // Add 1 to include the player
         let activePlayers = 0;
         
-        // Determine how many players have already acted based on position
-        switch(playerPos) {
-            case 'early':
-                activePlayers = 1; // Maybe just the big blind
-                break;
-            case 'middle':
-                activePlayers = Math.ceil(count * 0.3);
-                break;
-            case 'late':
-                activePlayers = Math.ceil(count * 0.7);
-                break;
-            case 'button':
-                activePlayers = count - 2;
-                break;
+        // Calculate active players based on position and total players
+        if (playerPos === 'small_blind') {
+            activePlayers = 0;
+        } else if (playerPos === 'big_blind') {
+            activePlayers = 1;
+        } else {
+            // For non-blind positions, calculate how many players have acted
+            // Find the position number of the current player
+            let currentPosNum = 0;
+            for (let i = 1; i <= totalPlayers; i++) {
+                if (getPositionName(totalPlayers, i) === playerPos) {
+                    currentPosNum = i;
+                    break;
+                }
+            }
+            // Players who have acted = players between SB and current position
+            activePlayers = currentPosNum - 1;
         }
         
         // Ensure activePlayers is at least 0 and at most the total count
