@@ -26,22 +26,129 @@ def get_valid_number_input(prompt, min_value=0):
         except ValueError:
             print("Please enter a valid number")
 
-def get_betting_recommendation(hand_type, hand_strength, pot_odds, position):
+def get_position_name(total_players, player_position):
+    """Get the poker position name based on total players and position."""
+    if player_position == 1:
+        return "small_blind"
+    elif player_position == 2:
+        return "big_blind"
+    elif total_players == 9:
+        positions = {
+            3: "under_the_gun",
+            4: "under_the_gun_plus_1",
+            5: "under_the_gun_plus_2",
+            6: "middle_position_1",
+            7: "hijack",
+            8: "cutoff",
+            9: "button"
+        }
+        return positions.get(player_position, "unknown")
+    elif total_players == 8:
+        positions = {
+            3: "under_the_gun",
+            4: "under_the_gun_plus_1",
+            5: "middle_position_1",
+            6: "hijack",
+            7: "cutoff",
+            8: "button"
+        }
+        return positions.get(player_position, "unknown")
+    elif total_players == 7:
+        positions = {
+            3: "under_the_gun",
+            4: "middle_position_1",
+            5: "hijack",
+            6: "cutoff",
+            7: "button"
+        }
+        return positions.get(player_position, "unknown")
+    elif total_players == 6:
+        positions = {
+            3: "under_the_gun",
+            4: "middle_position",
+            5: "cutoff",
+            6: "button"
+        }
+        return positions.get(player_position, "unknown")
+    elif total_players == 5:
+        positions = {
+            3: "under_the_gun",
+            4: "cutoff",
+            5: "button"
+        }
+        return positions.get(player_position, "unknown")
+    elif total_players == 4:
+        positions = {
+            3: "cutoff",
+            4: "button"
+        }
+        return positions.get(player_position, "unknown")
+    elif total_players == 3:
+        positions = {
+            3: "button"
+        }
+        return positions.get(player_position, "unknown")
+    return "unknown"
+
+def get_betting_recommendation(hand_type, hand_strength, pot_odds, position, is_blind=False):
     """Get betting recommendation based on hand strength and other factors."""
-    if hand_strength >= 0.8:  # Very strong hand
-        return "Raise", "You have a very strong hand. Consider raising 3-4x the big blind."
-    elif hand_strength >= 0.6:  # Strong hand
-        if position in ['late', 'button']:
-            return "Raise/Call", "You have a strong hand in late position. Consider raising 2-3x the big blind or calling."
-        return "Call", "You have a strong hand. Consider calling or raising if there's minimal action before you."
-    elif hand_strength >= 0.4:  # Medium hand
-        if pot_odds > hand_strength:
-            return "Fold", "Your hand is marginal and the pot odds aren't favorable. Consider folding."
-        if position in ['late', 'button']:
-            return "Call", "Your hand has potential in late position. Consider calling if the price is right."
-        return "Check/Fold", "Your hand is marginal. Check if possible, fold to significant action."
-    else:  # Weak hand
-        return "Fold", "Your hand is weak. It's best to fold and wait for a better opportunity."
+    if position == "small_blind":
+        if hand_strength >= 0.8:  # Very strong hand
+            return "Raise", "You have a very strong hand in the small blind. Consider raising 4-5x the big blind."
+        elif hand_strength >= 0.6:  # Strong hand
+            return "Call/Raise", "You have a strong hand. Consider completing the blind or raising 3x the big blind."
+        elif hand_strength >= 0.4:  # Medium hand
+            if pot_odds > hand_strength:
+                return "Fold", "Your hand is marginal and the pot odds aren't favorable. Consider folding to a raise."
+            return "Call", "Your hand has potential. Consider completing the blind if no raises."
+        else:  # Weak hand
+            return "Fold", "Your hand is weak. It's best to fold unless you can see a free flop."
+    
+    elif position == "big_blind":
+        if hand_strength >= 0.8:  # Very strong hand
+            return "Raise", "You have a very strong hand in the big blind. Consider raising 3-4x if there's action."
+        elif hand_strength >= 0.6:  # Strong hand
+            return "Call/Raise", "You have a strong hand. Consider raising if there's one limper, call if raised."
+        elif hand_strength >= 0.4:  # Medium hand
+            if pot_odds > hand_strength:
+                return "Check/Fold", "Your hand is marginal. Check if no raise, fold to significant action."
+            return "Check/Call", "Your hand has potential. Check if possible, call small raises."
+        else:  # Weak hand
+            return "Check/Fold", "Your hand is weak. Check if possible, fold to any raise."
+    
+    elif position == "under_the_gun":
+        if hand_strength >= 0.8:  # Very strong hand
+            return "Raise", "You have a very strong hand in early position. Open with 3x the big blind."
+        elif hand_strength >= 0.65:  # Strong hand
+            return "Raise", "You have a strong hand. Consider opening with 2.5x the big blind."
+        else:  # Medium or weak hand
+            return "Fold", "Your hand isn't strong enough to open from under the gun."
+    
+    elif position in ["middle_position", "cutoff"]:
+        if hand_strength >= 0.8:  # Very strong hand
+            return "Raise", "You have a very strong hand. Open with 2.5-3x the big blind."
+        elif hand_strength >= 0.5:  # Strong to medium hand
+            return "Raise", "You have a playable hand in middle/cutoff. Consider raising 2.5x the big blind."
+        else:  # Weak hand
+            return "Fold", "Your hand is too weak for this position. Wait for a better spot."
+    
+    elif position == "button":
+        if hand_strength >= 0.8:  # Very strong hand
+            return "Raise", "You have a very strong hand on the button. Raise 2.5-3x the big blind."
+        elif hand_strength >= 0.4:  # Medium to strong hand
+            return "Raise", "You have a playable hand on the button. Consider stealing with 2-2.5x the big blind."
+        else:  # Weak hand
+            if pot_odds < 0.2:  # If it's cheap to see a flop
+                return "Call", "Consider calling if everyone limped, otherwise fold."
+            return "Fold", "Your hand is weak. It's best to wait for a better opportunity."
+    
+    else:  # Unknown position
+        if hand_strength >= 0.8:
+            return "Raise", "You have a very strong hand. Consider raising 3x the big blind."
+        elif hand_strength >= 0.6:
+            return "Call", "You have a strong hand. Consider calling or raising if there's minimal action."
+        else:
+            return "Fold", "Your hand isn't strong enough to play out of position."
 
 def main():
     print("Welcome to Texas Hold'em Poker Assistant!")
@@ -53,6 +160,29 @@ def main():
     while True:
         simulator.reset_game()
         print("\n=== New Hand ===")
+        
+        # Get total players and position
+        while True:
+            try:
+                total_players = int(input("Total number of players (3-9): "))
+                if 3 <= total_players <= 9:
+                    break
+                print("Please enter a number between 3 and 9")
+            except ValueError:
+                print("Please enter a valid number")
+        
+        while True:
+            try:
+                player_position = int(input(f"Your position (1-{total_players}, 1=small blind): "))
+                if 1 <= player_position <= total_players:
+                    break
+                print(f"Please enter a number between 1 and {total_players}")
+            except ValueError:
+                print("Please enter a valid number")
+        
+        position = get_position_name(total_players, player_position)
+        simulator.position = position
+        print(f"Your position: {position.replace('_', ' ').title()}")
         
         # Get hole cards
         print("\nEnter your hole cards:")
@@ -67,17 +197,9 @@ def main():
         
         # Get game state information
         print("\nEnter game state information:")
-        simulator.num_opponents = int(get_valid_number_input("Number of opponents (1-9): ", 1))
+        simulator.num_opponents = total_players - 1
         simulator.pot_size = get_valid_number_input("Current pot size: ", 0)
         simulator.player_stack = get_valid_number_input("Your stack size: ", 0)
-        
-        # Get position
-        while True:
-            position = input("Your position (early/middle/late/button): ").lower()
-            if position in ['early', 'middle', 'late', 'button']:
-                simulator.position = position
-                break
-            print("Invalid position. Please choose from: early, middle, late, or button")
         
         # Calculate preflop hand strength
         hand_type, hand_strength = simulator.calculate_preflop_strength()
@@ -87,8 +209,12 @@ def main():
         
         # Get opponent actions
         total_bets = 0
-        for i in range(simulator.num_opponents):
-            bet = get_valid_number_input(f"Opponent {i+1} bet amount (0 for check/fold): ", 0)
+        for i in range(1, total_players):
+            relative_pos = (player_position + i) % total_players
+            if relative_pos == 0:
+                relative_pos = total_players
+            pos_name = get_position_name(total_players, relative_pos).replace('_', ' ').title()
+            bet = get_valid_number_input(f"{pos_name} bet amount (0 for check/fold): ", 0)
             simulator.opponent_bets.append(bet)
             total_bets += bet
         
@@ -98,7 +224,8 @@ def main():
             pot_odds = total_bets / (simulator.pot_size + total_bets)
         
         # Get betting recommendation
-        action, reason = get_betting_recommendation(hand_type, hand_strength, pot_odds, simulator.position)
+        is_blind = position in ["small_blind", "big_blind"]
+        action, reason = get_betting_recommendation(hand_type, hand_strength, pot_odds, position, is_blind)
         print(f"\nRecommended Action: {action}")
         print(f"Reason: {reason}")
         

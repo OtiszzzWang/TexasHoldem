@@ -134,51 +134,159 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Function to get betting recommendation
     function getBettingRecommendation(handType, handStrength, potOdds, position) {
-        if (handStrength >= 0.8) { // Very strong hand
-            return {
-                action: "Raise",
-                reason: "You have a very strong hand. Consider raising 3-4x the big blind.",
-                class: "raise"
-            };
-        } else if (handStrength >= 0.6) { // Strong hand
-            if (position === 'late' || position === 'button') {
+        if (position === "small_blind") {
+            if (handStrength >= 0.8) { // Very strong hand
                 return {
-                    action: "Raise/Call",
-                    reason: "You have a strong hand in late position. Consider raising 2-3x the big blind or calling.",
+                    action: "Raise",
+                    reason: "You have a very strong hand in the small blind. Consider raising 4-5x the big blind.",
                     class: "raise"
                 };
-            }
-            return {
-                action: "Call",
-                reason: "You have a strong hand. Consider calling or raising if there's minimal action before you.",
-                class: "call"
-            };
-        } else if (handStrength >= 0.4) { // Medium hand
-            if (potOdds > handStrength) {
+            } else if (handStrength >= 0.6) { // Strong hand
+                return {
+                    action: "Call/Raise",
+                    reason: "You have a strong hand. Consider completing the blind or raising 3x the big blind.",
+                    class: "raise"
+                };
+            } else if (handStrength >= 0.4) { // Medium hand
+                if (potOdds > handStrength) {
+                    return {
+                        action: "Fold",
+                        reason: "Your hand is marginal and the pot odds aren't favorable. Consider folding to a raise.",
+                        class: "fold"
+                    };
+                }
+                return {
+                    action: "Call",
+                    reason: "Your hand has potential. Consider completing the blind if no raises.",
+                    class: "call"
+                };
+            } else { // Weak hand
                 return {
                     action: "Fold",
-                    reason: "Your hand is marginal and the pot odds aren't favorable. Consider folding.",
+                    reason: "Your hand is weak. It's best to fold unless you can see a free flop.",
                     class: "fold"
                 };
             }
-            if (position === 'late' || position === 'button') {
+        } else if (position === "big_blind") {
+            if (handStrength >= 0.8) { // Very strong hand
                 return {
-                    action: "Call",
-                    reason: "Your hand has potential in late position. Consider calling if the price is right.",
+                    action: "Raise",
+                    reason: "You have a very strong hand in the big blind. Consider raising 3-4x if there's action.",
+                    class: "raise"
+                };
+            } else if (handStrength >= 0.6) { // Strong hand
+                return {
+                    action: "Call/Raise",
+                    reason: "You have a strong hand. Consider raising if there's one limper, call if raised.",
+                    class: "raise"
+                };
+            } else if (handStrength >= 0.4) { // Medium hand
+                if (potOdds > handStrength) {
+                    return {
+                        action: "Check/Fold",
+                        reason: "Your hand is marginal. Check if no raise, fold to significant action.",
+                        class: "fold"
+                    };
+                }
+                return {
+                    action: "Check/Call",
+                    reason: "Your hand has potential. Check if possible, call small raises.",
                     class: "call"
                 };
+            } else { // Weak hand
+                return {
+                    action: "Check/Fold",
+                    reason: "Your hand is weak. Check if possible, fold to any raise.",
+                    class: "fold"
+                };
             }
-            return {
-                action: "Check/Fold",
-                reason: "Your hand is marginal. Check if possible, fold to significant action.",
-                class: "fold"
-            };
-        } else { // Weak hand
-            return {
-                action: "Fold",
-                reason: "Your hand is weak. It's best to fold and wait for a better opportunity.",
-                class: "fold"
-            };
+        } else if (position === "under_the_gun" || position.startsWith("under_the_gun_plus")) {
+            if (handStrength >= 0.8) { // Very strong hand
+                return {
+                    action: "Raise",
+                    reason: "You have a very strong hand in early position. Open with 3x the big blind.",
+                    class: "raise"
+                };
+            } else if (handStrength >= 0.65) { // Strong hand
+                return {
+                    action: "Raise",
+                    reason: "You have a strong hand. Consider opening with 2.5x the big blind.",
+                    class: "raise"
+                };
+            } else { // Medium or weak hand
+                return {
+                    action: "Fold",
+                    reason: "Your hand isn't strong enough to open from early position.",
+                    class: "fold"
+                };
+            }
+        } else if (position === "middle_position" || position === "middle_position_1" || position === "hijack") {
+            if (handStrength >= 0.8) { // Very strong hand
+                return {
+                    action: "Raise",
+                    reason: "You have a very strong hand. Open with 2.5-3x the big blind.",
+                    class: "raise"
+                };
+            } else if (handStrength >= 0.5) { // Strong to medium hand
+                return {
+                    action: "Raise",
+                    reason: "You have a playable hand in middle position. Consider raising 2.5x the big blind.",
+                    class: "raise"
+                };
+            } else { // Weak hand
+                return {
+                    action: "Fold",
+                    reason: "Your hand is too weak for this position. Wait for a better spot.",
+                    class: "fold"
+                };
+            }
+        } else if (position === "cutoff" || position === "button") {
+            if (handStrength >= 0.8) { // Very strong hand
+                return {
+                    action: "Raise",
+                    reason: "You have a very strong hand in late position. Raise 2.5-3x the big blind.",
+                    class: "raise"
+                };
+            } else if (handStrength >= 0.4) { // Medium to strong hand
+                return {
+                    action: "Raise",
+                    reason: "You have a playable hand in late position. Consider stealing with 2-2.5x the big blind.",
+                    class: "raise"
+                };
+            } else { // Weak hand
+                if (potOdds < 0.2) { // If it's cheap to see a flop
+                    return {
+                        action: "Call",
+                        reason: "Consider calling if everyone limped, otherwise fold.",
+                        class: "call"
+                    };
+                }
+                return {
+                    action: "Fold",
+                    reason: "Your hand is weak. It's best to wait for a better opportunity.",
+                    class: "fold"
+                };
+            }
+        } else { // Unknown position
+            if (handStrength >= 0.8) {
+                return {
+                    action: "Raise",
+                    reason: "You have a very strong hand. Consider raising 3x the big blind.",
+                    class: "raise"
+                };
+            } else if (handStrength >= 0.6) {
+                return {
+                    action: "Call",
+                    reason: "You have a strong hand. Consider calling or raising if there's minimal action.",
+                    class: "call"
+                };
+            } else {
+                return {
+                    action: "Fold",
+                    reason: "Your hand isn't strong enough to play out of position.",
+                    class: "fold"
+                };
+            }
         }
     }
     
@@ -291,8 +399,80 @@ document.addEventListener('DOMContentLoaded', function() {
         updateCardDisplay(hole2, card2Rank.value, card2Suit.value);
     }
     
+    // Function to get position name based on total players and position
+    function getPositionName(totalPlayers, playerPosition) {
+        if (playerPosition === 1) {
+            return "small_blind";
+        } else if (playerPosition === 2) {
+            return "big_blind";
+        }
+
+        const positions = {
+            9: {
+                3: "under_the_gun",
+                4: "under_the_gun_plus_1",
+                5: "under_the_gun_plus_2",
+                6: "middle_position_1",
+                7: "hijack",
+                8: "cutoff",
+                9: "button"
+            },
+            8: {
+                3: "under_the_gun",
+                4: "under_the_gun_plus_1",
+                5: "middle_position_1",
+                6: "hijack",
+                7: "cutoff",
+                8: "button"
+            },
+            7: {
+                3: "under_the_gun",
+                4: "middle_position_1",
+                5: "hijack",
+                6: "cutoff",
+                7: "button"
+            },
+            6: {
+                3: "under_the_gun",
+                4: "middle_position",
+                5: "cutoff",
+                6: "button"
+            },
+            5: {
+                3: "under_the_gun",
+                4: "cutoff",
+                5: "button"
+            },
+            4: {
+                3: "cutoff",
+                4: "button"
+            },
+            3: {
+                3: "button"
+            }
+        };
+
+        return positions[totalPlayers]?.[playerPosition] || "unknown";
+    }
+
+    // Function to update position options based on number of players
+    function updatePositionOptions() {
+        const totalPlayers = parseInt(numOpponents.value) + 1; // +1 to include the player
+        position.innerHTML = ''; // Clear existing options
+
+        // Add options for each valid position
+        for (let i = 1; i <= totalPlayers; i++) {
+            const posName = getPositionName(totalPlayers, i);
+            const option = document.createElement('option');
+            option.value = posName;
+            option.textContent = posName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            position.appendChild(option);
+        }
+    }
+
     // Event listener for number of opponents
     numOpponents.addEventListener('change', function() {
+        updatePositionOptions();
         const count = parseInt(this.value);
         if (count > 0) {
             generateOpponentBetInputs(count);
@@ -300,6 +480,9 @@ document.addEventListener('DOMContentLoaded', function() {
             opponentBets.classList.add('hidden');
         }
     });
+
+    // Initialize position options
+    updatePositionOptions();
     
     // Event listener for position change
     position.addEventListener('change', function() {
