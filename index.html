@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texas Hold'em Poker Assistant</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #27ae60;
+            --accent-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: var(--light-color);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+        }
+        
+        h1 {
+            margin-bottom: 10px;
+        }
+        
+        .poker-table {
+            background-color: var(--secondary-color);
+            border-radius: 200px;
+            height: 400px;
+            margin: 30px auto;
+            position: relative;
+            width: 800px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            border: 15px solid #1e8449;
+        }
+        
+        .community-cards {
+            display: flex;
+            justify-content: center;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            gap: 10px;
+        }
+        
+        .player-cards {
+            display: flex;
+            justify-content: center;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            gap: 10px;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            height: 120px;
+            width: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 5px;
+            font-weight: bold;
+            position: relative;
+        }
+        
+        .card.empty {
+            background-color: rgba(255, 255, 255, 0.3);
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+        }
+        
+        .card.hearts, .card.diamonds {
+            color: var(--accent-color);
+        }
+        
+        .card.clubs, .card.spades {
+            color: black;
+        }
+        
+        .card .rank {
+            font-size: 24px;
+            line-height: 1;
+        }
+        
+        .card .suit {
+            font-size: 24px;
+            text-align: center;
+            line-height: 1;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .input-group > div {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: var(--dark-color);
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        button {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #219653;
+        }
+        
+        .card-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        
+        .card-selector select {
+            width: auto;
+        }
+        
+        .results {
+            background-color: white;
+            border-radius: 5px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .results h3 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .recommendation {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .recommendation.raise {
+            color: var(--accent-color);
+        }
+        
+        .recommendation.call {
+            color: var(--secondary-color);
+        }
+        
+        .recommendation.fold {
+            color: var(--dark-color);
+        }
+        
+        .stage-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .stage-buttons button {
+            flex: 1;
+        }
+        
+        .reset-button {
+            background-color: var(--accent-color);
+        }
+        
+        .reset-button:hover {
+            background-color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Texas Hold'em Poker Assistant</h1>
+            <p>Get real-time advice for your poker game</p>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="poker-table">
+            <div class="community-cards" id="community-cards">
+                <div class="card empty" id="flop1"></div>
+                <div class="card empty" id="flop2"></div>
+                <div class="card empty" id="flop3"></div>
+                <div class="card empty" id="turn"></div>
+                <div class="card empty" id="river"></div>
+            </div>
+            
+            <div class="player-cards" id="player-cards">
+                <div class="card empty" id="hole1"></div>
+                <div class="card empty" id="hole2"></div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div id="hole-cards-input">
+                <h2>Your Hole Cards</h2>
+                <div class="card-selector">
+                    <label>Card 1:</label>
+                    <select id="card1-rank">
+                        <option value="">Rank</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="T">10</option>
+                        <option value="J">J</option>
+                        <option value="Q">Q</option>
+                        <option value="K">K</option>
+                        <option value="A">A</option>
+                    </select>
+                    <select id="card1-suit">
+                        <option value="">Suit</option>
+                        <option value="h">Hearts</option>
+                        <option value="d">Diamonds</option>
+                        <option value="c">Clubs</option>
+                        <option value="s">Spades</option>
+                    </select>
+                </div>
+                
+                <div class="card-selector">
+                    <label>Card 2:</label>
+                    <select id="card2-rank">
+                        <option value="">Rank</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="T">10</option>
+                        <option value="J">J</option>
+                        <option value="Q">Q</option>
+                        <option value="K">K</option>
+                        <option value="A">A</option>
+                    </select>
+                    <select id="card2-suit">
+                        <option value="">Suit</option>
+                        <option value="h">Hearts</option>
+                        <option value="d">Diamonds</option>
+                        <option value="c">Clubs</option>
+                        <option value="s">Spades</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <div>
+                    <label for="num-opponents">Number of Opponents:</label>
+                    <input type="number" id="num-opponents" min="1" max="9" value="2">
+                </div>
+                
+                <div>
+                    <label for="pot-size">Current Pot Size:</label>
+                    <input type="number" id="pot-size" min="0" value="100">
+                </div>
+                
+                <div>
+                    <label for="player-stack">Your Stack Size:</label>
+                    <input type="number" id="player-stack" min="0" value="1000">
+                </div>
+                
+                <div>
+                    <label for="position">Your Position:</label>
+                    <select id="position">
+                        <option value="early">Early</option>
+                        <option value="middle">Middle</option>
+                        <option value="late">Late</option>
+                        <option value="button">Button</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="opponent-bets" class="hidden">
+                <h3>Opponent Bets</h3>
+                <div id="opponent-bet-inputs"></div>
+            </div>
+            
+            <button id="analyze-preflop">Analyze Preflop Hand</button>
+            
+            <div id="preflop-results" class="results hidden">
+                <h3>Preflop Analysis</h3>
+                <p>Hand Type: <span id="hand-type"></span></p>
+                <p>Hand Strength: <span id="hand-strength"></span></p>
+                <p class="recommendation" id="recommendation"></p>
+                <p id="recommendation-reason"></p>
+                
+                <div class="stage-buttons">
+                    <button id="continue-to-flop">Continue to Flop</button>
+                    <button id="reset-hand" class="reset-button">New Hand</button>
+                </div>
+            </div>
+            
+            <div id="flop-input" class="hidden">
+                <h2>Flop Cards</h2>
+                <div class="card-selector">
+                    <label>Flop 1:</label>
+                    <select id="flop1-rank">
+                        <option value="">Rank</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="T">10</option>
+                        <option value="J">J</option>
+                        <option value="Q">Q</option>
+                        <option value="K">K</option>
+                        <option value="A">A</option>
+                    </select>
+                    <select id="flop1-suit">
+                        <option value="">Suit</option>
+                        <option value="h">Hearts</option>
+                        <option value="d">Diamonds</option>
+                        <option value="c">Clubs</option>
+                        <option value="s">Spades</option>
+                    </select>
+                </div>
+                
+                <div class="card-selector">
+                    <label>Flop 2:</label>
+                    <select id="flop2-rank">
+                        <option value="">Rank</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="T">10</option>
+                        <option value="J">J</option>
+                        <option value="Q">Q</option>
+                        <option value="K">K</option>
+                        <option value="A">A</option>
+                    </select>
+                    <select id="flop2-suit">
+                        <option value="">Suit</option>
+                        <option value="h">Hearts</option>
+                        <option value="d">Diamonds</option>
+                        <option value="c">Clubs</option>
+                        <option value="s">Spades</option>
+                    </select>
+                </div>
+                
+                <div class="card-selector">
+                    <label>Flop 3:</label>
+                    <select id="flop3-rank">
+                        <option value="">Rank</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="T">10</option>
+                        <option value="J">J</option>
+                        <option value="Q">Q</option>
+                        <option value="K">K</option>
+                        <option value="A">A</option>
+                    </select>
+                    <select id="flop3-suit">
+                        <option value="">Suit</option>
+                        <option value="h">Hearts</option>
+                        <option value="d">Diamonds</option>
+                        <option value="c">Clubs</option>
+                        <option value="s">Spades</option>
+                    </select>
+                </div>
+                
+                <button id="analyze-flop">Analyze Flop</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="poker_ui.js"></script>
+</body>
+</html>
